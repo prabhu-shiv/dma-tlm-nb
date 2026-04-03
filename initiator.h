@@ -32,12 +32,16 @@ struct Initiator : sc_module, tlm_bw_transport_if<>
 
         tlm_phase phase = BEGIN_REQ;
 
-        std::cout << "[INITIATOR] Sending BEGIN_REQ\n";
+        std::cout << "[INITIATOR] BEGIN_REQ sent\n";
 
-        socket->nb_transport_fw(*trans, phase, delay);
+        tlm_sync_enum status = socket->nb_transport_fw(*trans, phase, delay);
+
+        if (status == TLM_UPDATED && phase == END_REQ)
+        {
+            std::cout << "[INITIATOR] END_REQ received\n";
+        }
     }
 
-    // Backward path
     virtual tlm_sync_enum nb_transport_bw(
         tlm_generic_payload& trans,
         tlm_phase& phase,
@@ -45,10 +49,13 @@ struct Initiator : sc_module, tlm_bw_transport_if<>
     {
         if (phase == BEGIN_RESP)
         {
-            std::cout << "[INITIATOR] Received BEGIN_RESP\n";
+            std::cout << "[INITIATOR] BEGIN_RESP received\n";
 
             phase = END_RESP;
-            return TLM_COMPLETED;
+
+            std::cout << "[INITIATOR] Sending END_RESP\n";
+
+            return TLM_UPDATED;
         }
         return TLM_ACCEPTED;
     }
