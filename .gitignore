@@ -1,0 +1,12 @@
+# Build files
+sim
+*.o
+*.out
+
+# SystemC / build artifacts
+*.vcd
+*.log
+
+# Editor
+*.swp
+*~
