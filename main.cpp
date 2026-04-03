@@ -3,6 +3,7 @@
 #include "target.h"
 #include "bus.h"
 #include "peripheral.h"
+#include "monitor.h"
 
 using namespace sc_core;
 
@@ -12,11 +13,11 @@ int sc_main(int argc, char* argv[])
     Target memory("memory");
     Peripheral periph("peripheral");
     Bus bus("bus");
+    Monitor monitor("monitor");
 
-    // Bind DMA → Bus
+    bus.monitor = &monitor;
+
     dma.socket.bind(bus.target_socket);
-
-    // Bind Bus → Memory & Peripheral
     bus.initiator_socket_mem.bind(memory.socket);
     bus.initiator_socket_periph.bind(periph.socket);
 
