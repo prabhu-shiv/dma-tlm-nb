@@ -1,15 +1,24 @@
 #include <systemc>
 #include "initiator.h"
 #include "target.h"
+#include "bus.h"
+#include "peripheral.h"
 
 using namespace sc_core;
 
 int sc_main(int argc, char* argv[])
 {
-    Initiator initiator("initiator");
-    Target target("target");
+    Initiator dma("dma");
+    Target memory("memory");
+    Peripheral periph("peripheral");
+    Bus bus("bus");
 
-    initiator.socket.bind(target.socket);
+    // Bind DMA → Bus
+    dma.socket.bind(bus.target_socket);
+
+    // Bind Bus → Memory & Peripheral
+    bus.initiator_socket_mem.bind(memory.socket);
+    bus.initiator_socket_periph.bind(periph.socket);
 
     sc_start();
 

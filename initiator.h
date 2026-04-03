@@ -47,7 +47,7 @@ struct Initiator : sc_module, tlm_bw_transport_if<>
         tlm_generic_payload trans_write;
 
         trans_write.set_command(TLM_WRITE_COMMAND);
-        trans_write.set_address(20);
+        trans_write.set_address(0x90);
         trans_write.set_data_ptr(reinterpret_cast<unsigned char*>(&buffer));
         trans_write.set_data_length(4);
 
