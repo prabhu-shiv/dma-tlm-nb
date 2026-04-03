@@ -12,6 +12,10 @@ struct Initiator : sc_module, tlm_bw_transport_if<>
 {
     tlm_utils::simple_initiator_socket<Initiator> socket;
 
+    sc_event response_done;
+
+    int buffer;
+
     SC_CTOR(Initiator) : socket("socket")
     {
         socket.register_nb_transport_bw(this, &Initiator::nb_transport_bw);
@@ -20,26 +24,42 @@ struct Initiator : sc_module, tlm_bw_transport_if<>
 
     void process()
     {
-        tlm_generic_payload* trans = new tlm_generic_payload;
+        // -------- READ --------
+        tlm_generic_payload trans_read;
 
-        int data = 100;
-        sc_time delay = SC_ZERO_TIME;
-
-        trans->set_command(TLM_WRITE_COMMAND);
-        trans->set_address(0x100);
-        trans->set_data_ptr(reinterpret_cast<unsigned char*>(&data));
-        trans->set_data_length(4);
+        trans_read.set_command(TLM_READ_COMMAND);
+        trans_read.set_address(10);
+        trans_read.set_data_ptr(reinterpret_cast<unsigned char*>(&buffer));
+        trans_read.set_data_length(4);
 
         tlm_phase phase = BEGIN_REQ;
+        sc_time delay = SC_ZERO_TIME;
 
-        std::cout << "[INITIATOR] BEGIN_REQ sent\n";
+        std::cout << "[DMA] Sending READ\n";
 
-        tlm_sync_enum status = socket->nb_transport_fw(*trans, phase, delay);
+        socket->nb_transport_fw(trans_read, phase, delay);
 
-        if (status == TLM_UPDATED && phase == END_REQ)
-        {
-            std::cout << "[INITIATOR] END_REQ received\n";
-        }
+        wait(response_done);
+
+        std::cout << "[DMA] Read complete, data=" << buffer << "\n";
+
+        // -------- WRITE --------
+        tlm_generic_payload trans_write;
+
+        trans_write.set_command(TLM_WRITE_COMMAND);
+        trans_write.set_address(20);
+        trans_write.set_data_ptr(reinterpret_cast<unsigned char*>(&buffer));
+        trans_write.set_data_length(4);
+
+        phase = BEGIN_REQ;
+
+        std::cout << "[DMA] Sending WRITE\n";
+
+        socket->nb_transport_fw(trans_write, phase, delay);
+
+        wait(response_done);
+
+        std::cout << "[DMA] Write complete\n";
     }
 
     virtual tlm_sync_enum nb_transport_bw(
@@ -49,14 +69,13 @@ struct Initiator : sc_module, tlm_bw_transport_if<>
     {
         if (phase == BEGIN_RESP)
         {
-            std::cout << "[INITIATOR] BEGIN_RESP received\n";
-
             phase = END_RESP;
 
-            std::cout << "[INITIATOR] Sending END_RESP\n";
+            response_done.notify();
 
             return TLM_UPDATED;
         }
+
         return TLM_ACCEPTED;
     }
 
